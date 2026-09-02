@@ -1,0 +1,43 @@
+# PHPStan configuration — Bluewater Consulting, 2024-09.
+#
+# Scoped to lib/ only, and that is not an oversight.
+#
+# The first run was configured against the whole repository at level 5. It
+# reported 1,412 errors across public/, includes/ and partner/ — undefined
+# variables from $GLOBALS state passing, string offsets on possibly-false
+# return values, ~200 "call to function on possibly null" in the disclosure
+# templates, and every mysql_-era idiom in db_config.php. That output is not
+# actionable inside the engagement's budget and it drowns out findings in the
+# code we are actually writing, so analysis was scoped down to lib/ and the
+# level raised to 8 instead.
+#
+# Re-widening the paths is the correct long-term goal and should be done one
+# directory at a time with a baseline file. See LOAN-2210.
+#
+# NOTE: phpstan is declared in composer.json's require-dev, and composer has
+# never been run in this repository. There is no vendor/phpstan binary, so
+# this configuration has never actually executed against the committed code.
+# It was validated on a contractor laptop.
+
+parameters:
+    level: 8
+
+    paths:
+        - lib
+
+    # Explicit, even though they are outside `paths`, so that a future widening
+    # of `paths` does not silently pull them in.
+    excludePaths:
+        analyseAndScan:
+            - public
+            - includes
+            - partner
+            - batch
+            - cron
+            - tools
+            - tests
+            - data
+
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: true
+    reportUnmatchedIgnoredErrors: true

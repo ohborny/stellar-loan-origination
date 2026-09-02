@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  loanapp.wsdl - Meridian Trust Financial dealer partner interface
+
+  2023-06, tnguyen. LOAN-2077.
+
+  HAND-MAINTAINED. THIS FILE IS NOT GENERATED AND IT IS NOT AUTHORITATIVE.
+
+  There is no SOAP stack behind this. partner/endpoint.php reads a raw XML
+  body, runs a string rename pass over it, parses it with SimpleXML and
+  switches on an <action> element. This document was written by hand, after
+  the fact, because two dealers' vendors refused to start work without a
+  WSDL. It describes the interface we intended. It has drifted from the
+  interface that exists.
+
+  Known drift, as of the last time anybody looked (2023-11):
+
+    * UploadDocument and CancelApplication are declared below and are NOT
+      IMPLEMENTED. endpoint.php has no case for either; calling them falls
+      through to the default branch, which returns a soap:Fault saying the
+      action is unsupported (with the caller's whole request quoted back in
+      the detail element). Two dealers built against UploadDocument in 2023
+      before finding this out.
+
+    * applicantName is declared maxLength 60 below. partner/xml_map.php
+      truncates it to 30 characters, silently, via trunc30(). A dealer that
+      validates against this schema and sends a 45-character name gets a
+      30-character name stored and no error.
+
+    * There is no <secret> element in any of the message definitions, and
+      authentication is not described anywhere in this document. It is a
+      single shared secret sent either as a <secret> element in the payload
+      or as an X-Partner-Secret header. See partner/README.md.
+
+    * dealerCode is declared required. endpoint.php accepts a submission
+      without it (it becomes the literal string UNKNOWN) and does not check
+      it against any list of onboarded dealers.
+
+    * Every response, including every fault, is returned with HTTP 200. See
+      partner_soap_fault() in endpoint.php for why.
+
+    * The soap:address location below points at the DMZ proxy hostname. The
+      proxy was renamed once (2024) and this was not updated; the old name is
+      still a CNAME, so it still resolves, so nobody has fixed it.
+
+    * apr is declared xsd:decimal. The endpoint emits a raw PHP float, so
+      values like 0.12490000000000001 go over the wire.
+
+  Do not regenerate this from anything. There is nothing to regenerate it
+  from.
+-->
+<definitions name="LoanAppPartner"
+             targetNamespace="urn:meridiantrust:loanapp:partner:1"
+             xmlns:tns="urn:meridiantrust:loanapp:partner:1"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+    <xsd:schema targetNamespace="urn:meridiantrust:loanapp:partner:1"
+                elementFormDefault="unqualified">
+
+      <!-- NOTE: maxLength 60. The code truncates at 30. -->
+      <xsd:simpleType name="ApplicantNameType">
+        <xsd:restriction base="xsd:string">
+          <xsd:maxLength value="60"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:simpleType name="SsnLast4Type">
+        <xsd:restriction base="xsd:string">
+          <xsd:pattern value="[0-9]{4}"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:simpleType name="DealerCodeType">
+        <xsd:restriction base="xsd:string">
+          <xsd:maxLength value="20"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:element name="SubmitApplicationRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="action" type="xsd:string"/>
+            <xsd:element name="dealerCode" type="tns:DealerCodeType"/>
+            <xsd:element name="applicantName" type="tns:ApplicantNameType"/>
+            <xsd:element name="ssnLast4" type="tns:SsnLast4Type"/>
+            <!-- annualIncome is optional here. When it is omitted the code
+                 substitutes a hardcoded 45000. That is not documented
+                 anywhere the dealers can see. -->
+            <xsd:element name="annualIncome" type="xsd:decimal" minOccurs="0"/>
+            <xsd:element name="bureauScore" type="xsd:int"/>
+            <xsd:element name="monthlyObligations" type="xsd:decimal" minOccurs="0"/>
+            <xsd:element name="requestedAmount" type="xsd:decimal"/>
+            <xsd:element name="termMonths" type="xsd:int"/>
+            <xsd:element name="vin" type="xsd:string" minOccurs="0"/>
+            <!-- coApplicant is declared because map_partner_v2() supports it.
+                 v2 is behind FLAG_PARTNER_XML_V2, which is off, so a
+                 coApplicant block is parsed by nothing and ignored. -->
+            <xsd:element name="coApplicant" minOccurs="0">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="applicantName" type="tns:ApplicantNameType"/>
+                  <xsd:element name="annualIncome" type="xsd:decimal"/>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="SubmitApplicationResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="reference" type="xsd:long"/>
+            <xsd:element name="decision" type="xsd:string"/>
+            <xsd:element name="tier" type="xsd:string"/>
+            <xsd:element name="apr" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetStatusRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="action" type="xsd:string"/>
+            <xsd:element name="dealerCode" type="tns:DealerCodeType"/>
+            <!-- This is the internal loans.id. Sequential. Guessable. There
+                 is no check that it belongs to the requesting dealer. -->
+            <xsd:element name="reference" type="xsd:long"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="reference" type="xsd:long"/>
+            <xsd:element name="status" type="xsd:string"/>
+            <xsd:element name="tier" type="xsd:string"/>
+            <xsd:element name="tierLabel" type="xsd:string"/>
+            <xsd:element name="apr" type="xsd:decimal"/>
+            <xsd:element name="amount" type="xsd:decimal"/>
+            <xsd:element name="term" type="xsd:int"/>
+            <xsd:element name="applicantName" type="tns:ApplicantNameType"/>
+            <xsd:element name="ssnLast4" type="tns:SsnLast4Type"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <!-- NOT IMPLEMENTED. Declared 2023-06 because the dealers asked for a
+           way to send us the signed deal jacket. Never built; documents are
+           still faxed to the branch. -->
+      <xsd:element name="UploadDocumentRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="action" type="xsd:string"/>
+            <xsd:element name="dealerCode" type="tns:DealerCodeType"/>
+            <xsd:element name="reference" type="xsd:long"/>
+            <xsd:element name="kind" type="xsd:string"/>
+            <xsd:element name="filename" type="xsd:string"/>
+            <xsd:element name="content" type="xsd:base64Binary"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="UploadDocumentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="documentNumber" type="xsd:long"/>
+            <xsd:element name="accepted" type="xsd:boolean"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <!-- NOT IMPLEMENTED. A dealer calling this gets the unsupported-action
+           fault. Loans cancelled by an underwriter do reach status
+           CANCELLED, which partner_status_is_final() does not treat as
+           final, so a dealer polling one polls it forever. -->
+      <xsd:element name="CancelApplicationRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="action" type="xsd:string"/>
+            <xsd:element name="dealerCode" type="tns:DealerCodeType"/>
+            <xsd:element name="reference" type="xsd:long"/>
+            <xsd:element name="reasonCode" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="CancelApplicationResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="reference" type="xsd:long"/>
+            <xsd:element name="status" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+    </xsd:schema>
+  </types>
+
+  <message name="SubmitApplicationIn">
+    <part name="parameters" element="tns:SubmitApplicationRequest"/>
+  </message>
+  <message name="SubmitApplicationOut">
+    <part name="parameters" element="tns:SubmitApplicationResponse"/>
+  </message>
+  <message name="GetStatusIn">
+    <part name="parameters" element="tns:GetStatusRequest"/>
+  </message>
+  <message name="GetStatusOut">
+    <part name="parameters" element="tns:GetStatusResponse"/>
+  </message>
+  <message name="UploadDocumentIn">
+    <part name="parameters" element="tns:UploadDocumentRequest"/>
+  </message>
+  <message name="UploadDocumentOut">
+    <part name="parameters" element="tns:UploadDocumentResponse"/>
+  </message>
+  <message name="CancelApplicationIn">
+    <part name="parameters" element="tns:CancelApplicationRequest"/>
+  </message>
+  <message name="CancelApplicationOut">
+    <part name="parameters" element="tns:CancelApplicationResponse"/>
+  </message>
+
+  <portType name="LoanAppPartnerPortType">
+    <operation name="SubmitApplication">
+      <input message="tns:SubmitApplicationIn"/>
+      <output message="tns:SubmitApplicationOut"/>
+    </operation>
+    <operation name="GetStatus">
+      <input message="tns:GetStatusIn"/>
+      <output message="tns:GetStatusOut"/>
+    </operation>
+    <!-- declared, not implemented -->
+    <operation name="UploadDocument">
+      <input message="tns:UploadDocumentIn"/>
+      <output message="tns:UploadDocumentOut"/>
+    </operation>
+    <!-- declared, not implemented -->
+    <operation name="CancelApplication">
+      <input message="tns:CancelApplicationIn"/>
+      <output message="tns:CancelApplicationOut"/>
+    </operation>
+  </portType>
+
+  <binding name="LoanAppPartnerBinding" type="tns:LoanAppPartnerPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="SubmitApplication">
+      <soap:operation soapAction="urn:meridiantrust:loanapp:partner:1#SubmitApplication"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+    <operation name="GetStatus">
+      <soap:operation soapAction="urn:meridiantrust:loanapp:partner:1#GetStatus"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+    <operation name="UploadDocument">
+      <soap:operation soapAction="urn:meridiantrust:loanapp:partner:1#UploadDocument"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+    <operation name="CancelApplication">
+      <soap:operation soapAction="urn:meridiantrust:loanapp:partner:1#CancelApplication"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+
+  <service name="LoanAppPartnerService">
+    <documentation>
+      Meridian Trust Financial dealer partner interface. Hand-maintained;
+      see the comment at the top of this file before believing any of it.
+    </documentation>
+    <port name="LoanAppPartnerPort" binding="tns:LoanAppPartnerBinding">
+      <!-- old proxy hostname, still a CNAME, never updated after the 2024
+           rename -->
+      <soap:address location="https://loanapp-dmz-01.internal/partner/endpoint.php"/>
+    </port>
+  </service>
+
+</definitions>

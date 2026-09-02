@@ -1,0 +1,60 @@
+-- tier_d_audit_20220310.sql
+--
+-- RAN THIS - keeping for reference. DO NOT RUN AGAIN.
+--
+-- 2022-03-10, run against prod by mpatel at the request of Risk.
+--
+-- Context: Risk asked how many loans had been originated under Tier D
+-- since the "subprime pilot" officially ended in March 2018
+-- (LOAN-1502, still open and unassigned). The answer was larger than
+-- anyone expected, and larger than the number in the deck that went to
+-- the committee, because the deck was built from a spreadsheet someone
+-- maintained by hand.
+--
+-- The SELECTs below are the ones that produced the number. They are
+-- harmless and are the reason this file was kept.
+--
+-- The UPDATE below is not harmless. It was written during the same
+-- session to flag the affected loans with a note so Loan Ops could
+-- work through them. It has no WHERE clause guarding against loans
+-- that already had notes -- it CONCATs onto whatever was there -- and
+-- it was run twice, because the first run appeared to hang (it did
+-- not; the table has no index on tier and the scan was just slow, see
+-- sql/007_indexes_proposed.sql). So the affected rows have the flag
+-- text in their notes column twice.
+--
+-- Loan Ops never worked through them. The flag is still in the notes.
+--
+-- Everything below is commented out. Leave it that way.
+
+-- -- how many, and when
+-- SELECT COUNT(*) AS n, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen
+--   FROM loans
+--  WHERE tier = 'D';
+
+-- -- how many AFTER the pilot officially ended
+-- -- (created_at is a local-time ISO string, so this boundary is off by
+-- --  the box's UTC offset -- LOAN-2811. Nobody adjusted for it.)
+-- SELECT COUNT(*) AS n, SUM(amount) AS exposure
+--   FROM loans
+--  WHERE tier = 'D'
+--    AND created_at >= '2018-03-31';
+
+-- -- by year, for the deck
+-- SELECT substr(created_at, 1, 4) AS yr, COUNT(*) AS n, SUM(amount) AS exposure
+--   FROM loans
+--  WHERE tier = 'D'
+--  GROUP BY substr(created_at, 1, 4)
+--  ORDER BY yr;
+
+-- -- THE UPDATE. Run twice. No idempotency guard, no check for an
+-- -- existing flag, no audit_log row.
+-- UPDATE loans
+--    SET notes = notes || ' [TIER-D-POST-PILOT REVIEW 2022-03]'
+--  WHERE tier = 'D'
+--    AND created_at >= '2018-03-31';
+
+-- -- what was NOT run: anything that would stop new Tier D loans being
+-- -- originated. determine_tier() in public/apply.php still has the
+-- -- branch. FLAG_TIER_D_ENABLED exists in conf/feature_flags.php and
+-- -- is checked in one place and ignored in two.

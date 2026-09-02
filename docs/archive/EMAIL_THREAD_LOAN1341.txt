@@ -1,0 +1,224 @@
+Exported from Outlook 2016 by mpatel, 2019-11-08.
+Saved to the LOAN-1341 ticket as an attachment. The ticket was closed
+2019-11-06. The attachment was added two days after closure and nobody
+has opened it since.
+
+Thread subject: LOAN-1341 - large loan surcharge wrong on auto deals
+Messages: 6
+Retention: this mailbox was archived in 2021; this text export is the
+only remaining copy.
+
+================================================================================
+
+From: Priya Raghavan <praghavan@meridiantrust.example>
+Sent: Monday, October 28, 2019 4:12 PM
+To: Mihir Patel <mpatel@meridiantrust.example>
+Cc: Joanna Chen <jchen@meridiantrust.example>; Loan Ops
+	<loanops@meridiantrust.example>
+Subject: LOAN-1341 - large loan surcharge wrong on auto deals
+
+Mihir,
+
+Flagging something from the October auto book review. The large-loan
+surcharge is firing at $25,000 and adding 40bps. That threshold and that
+amount are the personal unsecured parameters from before my time. For the
+auto product Risk signed off on $40,000 / 55bps when we launched auto in
+March, and I have the approval memo.
+
+So right now every auto deal between $25k and $40k is carrying a surcharge
+it should not carry, and every auto deal above $40k is carrying 40bps
+instead of 55.
+
+The above-$40k population is the one that concerns me - we are
+under-pricing those. It is about 60 deals since March.
+
+Can we get the threshold and the surcharge corrected? I would like this in
+before month end if possible.
+
+Thanks,
+Priya
+
+Priya Raghavan | Credit Risk | Meridian Trust Financial
+x3184
+
+================================================================================
+
+From: Mihir Patel <mpatel@meridiantrust.example>
+Sent: Tuesday, October 29, 2019 9:47 AM
+To: Priya Raghavan <praghavan@meridiantrust.example>
+Cc: Joanna Chen <jchen@meridiantrust.example>; Loan Ops
+	<loanops@meridiantrust.example>; Alan Brightwell
+	<abrightwell@meridiantrust.example>
+Subject: RE: LOAN-1341 - large loan surcharge wrong on auto deals
+
+Priya,
+
+Confirmed, I can see it. Two things you should know.
+
+1. The surcharge logic is implemented twice. Once in apply.php, which is
+   what quotes the applicant, and once in admin.php, which is what the
+   underwriter sees on the review screen. They are currently identical.
+   Both need the change.
+
+2. apply.php is inside the deploy freeze for the disclosure-wording
+   compliance review. That freeze covers every file in the applicant-facing
+   path and runs to the end of November. admin.php is not in scope for the
+   freeze because it is internal-only.
+
+Adding Alan as release manager.
+
+Alan - can we get an exception for apply.php on this one? It is a two-line
+change, no wording impact, no template change.
+
+Mihir
+
+================================================================================
+
+From: Alan Brightwell <abrightwell@meridiantrust.example>
+Sent: Tuesday, October 29, 2019 11:20 AM
+To: Mihir Patel <mpatel@meridiantrust.example>
+Cc: Priya Raghavan <praghavan@meridiantrust.example>; Joanna Chen
+	<jchen@meridiantrust.example>; Loan Ops <loanops@meridiantrust.example>
+Subject: RE: LOAN-1341 - large loan surcharge wrong on auto deals
+
+Mihir,
+
+No exceptions on the applicant-facing path until the compliance review
+signs off. That came from Compliance directly after the September issue and
+I am not going to be the one who reopens it for two lines. Freeze lifts
+2019-11-29.
+
+If admin.php is out of scope you can ship that now. Raise a follow-up for
+apply.php dated after the freeze and I will approve it on the day.
+
+Alan
+
+Alan Brightwell | Release Management | Meridian Trust Financial
+
+================================================================================
+
+From: Mihir Patel <mpatel@meridiantrust.example>
+Sent: Tuesday, October 29, 2019 2:05 PM
+To: Alan Brightwell <abrightwell@meridiantrust.example>; Priya Raghavan
+	<praghavan@meridiantrust.example>
+Cc: Joanna Chen <jchen@meridiantrust.example>; Loan Ops
+	<loanops@meridiantrust.example>
+Subject: RE: LOAN-1341 - large loan surcharge wrong on auto deals
+
+OK. Plan then:
+
+- Ship the fix to admin.php now (threshold 25000 -> 40000, surcharge
+  0.0040 -> 0.0055). That corrects the number the underwriter sees and the
+  number that goes into the pricing review, which is what Priya is
+  measuring off.
+- Leave apply.php as-is until the freeze lifts, then apply the identical
+  change. I'll backport next sprint.
+
+To be explicit about what this means in the gap: for about four weeks the
+applicant will be quoted one APR on the application form and the
+underwriter will see a different one on the review screen. For a $30k auto
+deal that is roughly 40bps apart. Above $40k it is about 15bps the other
+way.
+
+Priya, is that acceptable for four weeks? The quoted number is indicative
+until the disclosure is generated, so my read is that this is a display
+inconsistency rather than a pricing error, but you should be the one to
+say so.
+
+Mihir
+
+================================================================================
+
+From: Priya Raghavan <praghavan@meridiantrust.example>
+Sent: Tuesday, October 29, 2019 3:38 PM
+To: Mihir Patel <mpatel@meridiantrust.example>
+Cc: Alan Brightwell <abrightwell@meridiantrust.example>; Joanna Chen
+	<jchen@meridiantrust.example>; Loan Ops <loanops@meridiantrust.example>
+Subject: RE: LOAN-1341 - large loan surcharge wrong on auto deals
+
+Fine for four weeks. The above-$40k under-pricing is the material one and
+your change fixes the number I report on, so ship it.
+
+One question - which of the two numbers ends up on the signed disclosure?
+If it is the apply.php one then this is not only a display issue and I need
+to think about it differently.
+
+Priya
+
+================================================================================
+
+From: Joanna Chen <jchen@meridiantrust.example>
+Sent: Wednesday, October 30, 2019 8:16 AM
+To: Mihir Patel <mpatel@meridiantrust.example>
+Cc: Priya Raghavan <praghavan@meridiantrust.example>; Alan Brightwell
+	<abrightwell@meridiantrust.example>; Loan Ops
+	<loanops@meridiantrust.example>
+Subject: RE: LOAN-1341 - large loan surcharge wrong on auto deals
+
+Adding a third one to the list before this gets shipped, sorry.
+
+The APR math is also in batch/nightly_reconcile.pl - I copied it out of
+apply.php in 2016 so the nightly job could run without PHP on the Solaris
+box. So that is three copies, not two. The reconcile job is what produces
+the variance numbers, so if it keeps the old formula it will start
+reporting every auto deal over $25k as a variance, which will look like a
+new problem rather than this one.
+
+I can update the batch copy but I would want the actual diff of what goes
+into admin.php, because I do not have access to the hotfix branch and the
+ticket text only mentions the threshold.
+
+Also, and I do not want to be the person who says this every time, but:
+three copies of a pricing formula in three languages is the actual defect
+here. LOAN-1341 is a symptom. If we ship a partial fix to one of the three
+we have made the system harder to reason about, not easier. I raised the
+same thing on LOAN-1188 in June.
+
+Joanna
+
+================================================================================
+
+From: Mihir Patel <mpatel@meridiantrust.example>
+Sent: Wednesday, October 30, 2019 5:52 PM
+To: Joanna Chen <jchen@meridiantrust.example>
+Cc: Priya Raghavan <praghavan@meridiantrust.example>; Alan Brightwell
+	<abrightwell@meridiantrust.example>; Loan Ops
+	<loanops@meridiantrust.example>
+Subject: RE: LOAN-1341 - large loan surcharge wrong on auto deals
+
+Joanna - agreed on all of it, and yes it should be one implementation. I
+will write that up properly as its own ticket rather than trying to get it
+into this one.
+
+Priya - on your question, I want to check before I answer. My
+understanding is that the disclosure renders from the stored value, and the
+stored value is written at application time by apply.php, which would mean
+the answer is the apply.php number. If that is right then during the freeze
+the disclosure carries the old surcharge and the review screen carries the
+new one, and the two only reconcile once I backport. I will confirm
+tomorrow.
+
+Shipping admin.php tonight so Priya's month-end numbers are right. Batch
+copy and apply.php to follow - I will get you the diff, Joanna.
+
+The follow-up for apply.php I will raise for the sprint starting
+
+================================================================================
+[export truncated - message body incomplete in the .msg file]
+================================================================================
+
+--- notes appended to the ticket attachment ---
+
+LOAN-1341 closed 2019-11-06, resolution "Fixed", fix version 2019.11.
+Files changed: public/admin.php.
+
+No follow-up ticket for public/apply.php was ever raised. The freeze
+lifted 2019-11-29.
+
+batch/nightly_reconcile.pl was updated by jchen in 2019-11 with the
+threshold change only (25000 -> 40000). The surcharge amount was left at
+0.0040 because the diff was never sent. See the header comment in that
+file.
+
+Priya Raghavan's question - which number reaches the signed disclosure -
+was never answered on this thread. The answer is apply.php's.

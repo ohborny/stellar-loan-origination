@@ -1,0 +1,51 @@
+# .gitignore
+# Started 2019-03 when the repo was migrated off SVN. Appended to since.
+
+# editor / OS noise
+*.swp
+*~
+.DS_Store
+.idea/
+.vscode/
+
+# backups people leave next to the file they were editing
+*.bak
+*.orig
+*.old
+*.php.save
+
+# the database. never commit this. added after the 2019 incident
+# (a developer copy was rsynced over production and we lost four hours
+#  of applications restoring from the 02:00 dump)
+data/*.db
+data/*.db-journal
+data/*.sqlite
+
+# batch output and logs
+data/logs/
+data/outbound/
+data/archive/
+data/uploads/
+data/loanapp_nightly.lock
+
+# local config overrides. added after the 2019 incident -- someone
+# committed a conf/loanapp.local.ini with the prod DB password in it and
+# it took three days to notice
+conf/*.local.ini
+conf/*.local.php
+.env
+
+# composer. never actually installed on any host -- composer.json came
+# from Bluewater in 2024 and vendor/ has never existed. Kept in case
+# somebody finally runs it.
+vendor/
+composer.lock
+
+# funding files. these contain applicant names and SSN last four
+*.fund
+*.fixed
+
+# scratch
+scratch/
+tmp/
+*.tmp

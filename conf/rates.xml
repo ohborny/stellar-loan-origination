@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    conf/rates.xml
+
+    Added 2019-08-02 (mpatel) as part of the LOAN-1341 follow-up. The intent
+    was that pricing would be loaded from this file instead of being
+    hardcoded in three different places. That migration was never finished.
+
+    authoritative as of 2019 - see LOAN-1341
+
+    Actual state of the world, for whoever finds this next:
+      * public/apply.php           - hardcoded, threshold 25000 / +0.0040
+      * public/admin.php           - hardcoded, threshold 40000 / +0.0055
+      * batch/nightly_reconcile.pl - hardcoded, threshold 40000 / +0.0040
+      * lib/Pricing/RateEngine.php - reads THIS file. Never called (LOAN-3002).
+    So the only consumer of this file is dead code, which is why nobody has
+    noticed that the effective dates below stopped being updated in 2023.
+
+    Rate change procedure in docs/ says to edit this file. That procedure has
+    not been correct since it was written.
+-->
+<rates>
+
+    <!-- Base rates by underwriting tier. These match the hardcoded values
+         in apply.php as of the 2023 hand-update. If Finance emails new
+         numbers, somebody edits apply.php and forgets this file. -->
+    <tiers>
+        <tier code="A" base_rate="0.0649" effective_date="2023-04-01" entered_by="mpatel"/>
+        <tier code="B" base_rate="0.0899" effective_date="2023-04-01" entered_by="mpatel"/>
+        <tier code="C" base_rate="0.1249" effective_date="2023-04-01" entered_by="mpatel"/>
+        <!-- Tier D: subprime pilot, officially sunset 2018 (LOAN-1502).
+             Still priced, still originated. -->
+        <tier code="D" base_rate="0.1899" effective_date="2023-04-01" entered_by="mpatel"/>
+        <!-- Sentinel row. The code falls through to this for the literal
+             tier string "DECLINE", which is why declined applications
+             display a 99.99% APR on the review screen. Do not change this
+             value; two reports key off 0.9999 to filter declines out. -->
+        <tier code="DEFAULT" base_rate="0.9999" effective_date="2013-01-01" entered_by="rwhitfield"/>
+    </tiers>
+
+    <!-- Term surcharge schedule. This is the RateEngine ("intended") shape:
+         a banded schedule. The three production copies instead compute
+         floor(max(0, term-36)/12) * 0.0025, which agrees with this only by
+         coincidence up to 60 months and diverges after that. -->
+    <term_surcharges>
+        <band min_months="0"  max_months="36" surcharge="0.0000"/>
+        <band min_months="37" max_months="48" surcharge="0.0025"/>
+        <band min_months="49" max_months="60" surcharge="0.0050"/>
+        <!-- max_months 999 is a sentinel for "no upper bound". The app caps
+             terms at 84 anyway, except conf/loanapp.ini says 84 and
+             apply.php does not check at all. -->
+        <band min_months="61" max_months="999" surcharge="0.0075"/>
+    </term_surcharges>
+
+    <!-- Large-loan surcharge schedule. Tiered, per the 2019 hotfix intent.
+         apply.php never got this change; admin.php got half of it; the Perl
+         batch got the threshold but not the amount. This file is the only
+         place the full intended schedule is written down. -->
+    <large_loan_surcharges>
+        <band max_amount="25000" surcharge="0.0000"/>
+        <band max_amount="40000" surcharge="0.0040"/>
+        <!-- above 40000: auto loans, added 2019 -->
+        <band max_amount="99999999" surcharge="0.0055"/>
+    </large_loan_surcharges>
+
+    <rounding>
+        <!-- RateEngine rounds half-up to 3 decimals. The PHP copies do not
+             round at all; the Perl copy sprintf's to 4 places. -->
+        <mode>half_up</mode>
+        <decimals>3</decimals>
+    </rounding>
+
+    <metadata>
+        <last_reviewed>2023-04-01</last_reviewed>
+        <reviewed_by>mpatel</reviewed_by>
+        <!-- mpatel left in 2022 per HR, but the 2023 rate load was entered
+             under his account because the credentials were still in the
+             shared password file. -->
+        <source_note>Finance email 2023-03-28, subject "Q2 rate sheet (final final)"</source_note>
+        <next_review_due>2023-10-01</next_review_due>
+    </metadata>
+
+</rates>

@@ -1,0 +1,242 @@
+/* ==========================================================================
+   loanapp.css
+   Meridian Trust Financial - LoanApp
+
+   2013 base (rwhitfield), with a 2017 section and a 2021 section appended
+   at the bottom. Nothing was ever removed, so several selectors are
+   defined two and three times with different values and the cascade
+   decides. inc/header.php also emits an inline <style> block that
+   duplicates part of the 2013 section, and because that block is inline
+   it wins over everything here on any page that includes the header.
+
+   The stylesheet is linked with a relative path ("css/loanapp.css") from
+   both public/ and public/reports/, so the report pages have been
+   completely unstyled since 2016.
+
+   Do not reorder the sections. -- 2017 comment, no author
+   ========================================================================== */
+
+/* -------------------- 2013 BASE -------------------- */
+
+body {
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 12px;
+    color: #222222;
+    background: #ffffff;
+    margin: 8px;
+}
+
+h1 { font-size: 18px; margin: 6px 0 10px 0; }
+h2 { font-size: 15px; margin: 6px 0 8px 0; }
+h3 { font-size: 13px; margin: 10px 0 4px 0; }
+h4 { font-size: 12px; margin: 8px 0 4px 0; }
+
+a { color: #0033aa; text-decoration: underline; }
+a:visited { color: #551a8b; }
+
+table {
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th {
+    background: #e8e8e8;
+    text-align: left;
+    font-weight: bold;
+}
+
+td, th {
+    padding: 4px 6px;
+    vertical-align: top;
+}
+
+input, select, textarea {
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 12px;
+}
+
+button {
+    font-size: 12px;
+    padding: 2px 8px;
+}
+
+.stepnav {
+    font-size: 11px;
+    color: #555555;
+    margin: 4px 0 10px 0;
+}
+
+/* the original tier colours */
+.tier-a { background: #ccffcc; }
+.tier-b { background: #ccffff; }
+.tier-c { background: #ffffcc; }
+.tier-d { background: #ffcccc; }
+.tier-decline { background: #dddddd; color: #666666; }
+
+/* 2014: the decision box on apply.php
+.decision {
+    border: 2px solid #333333;
+    padding: 10px;
+    margin-bottom: 15px;
+    background: #f8f8f8;
+}
+   -- apply.php uses an inline style instead, this was never applied.
+*/
+
+/* -------------------- 2017 SECTION -------------------- */
+/* Added with inc/header.php and inc/footer.php. The "consistent look
+   and feel" project. Two files were converted. */
+
+#hsg-header {
+    border-bottom: 2px solid #333333;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+#hsg-nav {
+    background: #f4f4f4;
+    border: 1px solid #cccccc;
+    padding: 5px;
+    margin-bottom: 10px;
+    font-size: 11px;
+}
+
+#hsg-footer {
+    border-top: 2px solid #333333;
+    margin-top: 14px;
+    padding-top: 6px;
+    font-size: 10px;
+    color: #666666;
+}
+
+.tabbar {
+    margin: 8px 0;
+    padding: 4px;
+    background: #f4f4f4;
+    border: 1px solid #cccccc;
+}
+
+.tabbar a { text-decoration: none; padding: 0 4px; }
+
+/* !important war, round 1. The 2017 tables were "too cramped" per a
+   ticket, so padding was bumped here. The 2021 section below bumps it
+   back down, also with !important, and loses on specificity. */
+td, th {
+    padding: 6px 8px !important;
+}
+
+/* Redefines the 2013 tier colours to the 2017 palette. Both sets are
+   still in the file; this one wins because it is later. Except on pages
+   that include inc/header.php, where the inline block wins instead and
+   you get the 2013 greens with the 2017 spacing. */
+.tier-a { background: #dff0d8; }
+.tier-b { background: #d9edf7; }
+.tier-c { background: #fcf8e3; }
+
+/* -------------------- DISCLOSURE -------------------- */
+/* 2019, for disclosure.php. Both the 2013 and the 2021 disclosure
+   templates in that file use these classes, which is why the rolled-back
+   2021 template still looks roughly right. */
+
+.disclosure {
+    border: 1px solid #333333;
+    padding: 14px;
+    margin-bottom: 16px;
+    max-width: 780px;
+}
+
+.disclosure h1 { font-size: 16px; }
+
+.disc-sub { font-size: 11px; color: #555555; margin-top: 0; }
+.disc-sec { font-size: 11px; margin: 6px 0; }
+.disc-fine { font-size: 10px; color: #444444; margin-top: 10px; }
+
+.tila-box { width: 100%; }
+.tila-note { font-size: 9px; font-weight: normal; color: #555555; }
+.tila-val { font-size: 15px; font-weight: bold; text-align: center; }
+
+/* .disclosure-2021 was styled during the aborted rollout. The rules were
+   never finished and the flag has been off since, so this is dead.
+.disclosure-2021 .tila-box th {
+    background: #1a4f8a;
+    color: #ffffff;
+}
+.disclosure-2021 .tila-val {
+    font-family: Georgia, serif;
+}
+*/
+
+.disclosure-2013 .tila-box th { background: #e8e8e8; }
+
+/* -------------------- 2021 SECTION -------------------- */
+/* soyelaran / tnguyen. Partly the security-banner work, partly an
+   attempt to make the underwriter screens readable on a laptop. */
+
+td, th {
+    padding: 3px 5px !important;   /* loses to the 2017 rule above */
+}
+
+.ratehdr { background: #eeeeee; }
+
+.loginbox {
+    width: 380px;
+    border: 1px solid #999999;
+    padding: 12px;
+    background: #fbfbfb;
+}
+
+.sec-banner {
+    background: #fff4f4;
+    border: 1px solid #cc0000;
+    padding: 6px;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+/* Tier D. Styled to look like a warning in 2021 because the pilot was
+   supposed to be winding down and the intent was to make Tier D rows
+   visually obvious so underwriters would stop approving them.
+   The pilot "ended" in 2018 (LOAN-1502, still open and unassigned).
+   Tier D loans are still being originated every week.
+
+   ??? did the pilot ever actually end? this style implies it is being
+   phased out but determine_tier() in apply.php still returns 'D' and
+   override.php still offers it in the dropdown. Nobody I have asked
+   knows who owns this. -- avaldez 2025 */
+.tier-d {
+    background: #f2dede !important;
+    color: #a94442 !important;
+    font-weight: bold;
+    border-left: 4px solid #a94442;
+}
+
+.tier-d:after {
+    content: " (pilot)";
+    font-size: 9px;
+    font-weight: normal;
+}
+
+/* 2023: dealer portal chrome. The dealer portal does not load this
+   stylesheet. LOAN-2077.
+.dealer-banner {
+    background: #eef6ff;
+    border-bottom: 3px solid #1a4f8a;
+    padding: 8px;
+}
+.dealer-code { font-family: monospace; font-size: 13px; }
+*/
+
+/* Print rules. Referenced by disclosure.php's header comment as "the
+   print stylesheet", which does not exist as a separate file. These
+   three rules are it. */
+@media print {
+    #hsg-nav { display: none; }
+    #hsg-footer { display: none; }
+    .tabbar { display: none; }
+}
+
+/* don't remove -- admin.php's table loses its borders without it (why?)
+   -- avaldez */
+table[border] td, table[border] th {
+    border: 1px solid #999999;
+}

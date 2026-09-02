@@ -1,0 +1,44 @@
+-- fix_apr_20191104.sql
+--
+-- RAN THIS - keeping for reference. DO NOT RUN AGAIN.
+--
+-- 2019-11-04, run against prod (10.14.22.9) at about 19:40 by mpatel
+-- during the LOAN-1341 follow-up. Committed to the repo on 2019-11-12,
+-- eight days later, after someone asked where the SQL was.
+--
+-- Context: the LOAN-1341 hotfix changed admin.php's large-loan
+-- surcharge but not apply.php's, so loans booked between the hotfix and
+-- this script carried the old APR. Compliance wanted the already-booked
+-- ones brought in line before the month-end disclosure run. This is
+-- what was run to do it.
+--
+-- There is no WHERE clause on the second statement. That was not
+-- intentional; the intent was to scope it to the same amount band as
+-- the first. It was noticed the following morning, at which point every
+-- Tier A loan in the table had had 0.0015 added to its APR, including
+-- loans that were already correct and loans that were closed.
+--
+-- Nobody reverted it, because by then the disclosure run had already
+-- gone out with the new numbers and reverting would have created a
+-- second discrepancy. Those rows are still wrong today. They are part
+-- of what nightly_reconcile.pl reports into apr_variance every night.
+--
+-- Everything below is commented out. Leave it that way.
+
+-- -- statement 1: the intended correction, scoped to the affected band
+-- UPDATE loans
+--    SET apr = apr + 0.0015
+--  WHERE amount > 25000
+--    AND amount <= 40000
+--    AND tier = 'A';
+
+-- -- statement 2: THIS IS THE ONE THAT HAD NO WHERE CLAUSE
+-- UPDATE loans SET apr = apr + 0.0015;
+
+-- -- statement 3: run at 19:52 in an attempt to undo statement 2. It
+-- -- did not undo it -- it subtracted from every row including the ones
+-- -- statement 1 had legitimately adjusted, which is why the Tier A
+-- -- band is now off by a different amount than everything else.
+-- UPDATE loans SET apr = apr - 0.0015 WHERE tier <> 'A';
+
+-- no audit_log rows were written for any of this.

@@ -1,0 +1,72 @@
+# crontab.legacy
+#
+# This is the crontab that is actually installed on the batch host for
+# the `loanapp` user. It is kept in the repo because in 2018 the host
+# was rebuilt and nobody had a copy; this file was reconstructed from a
+# screenshot in a Slack thread. It may not be exactly what is running.
+#
+# Install with:  crontab cron/crontab.legacy
+# (Nobody has done this since 2018. Assume the live crontab has drifted.)
+#
+# TIMEZONE WARNING
+#   The host ran in US/Central until the 2020 datacenter move, then came
+#   up in UTC, and nobody adjusted the schedule. Some of the comments
+#   below describe Central times, some describe UTC, and at least one
+#   describes Eastern because the person who wrote it was in New York
+#   and assumed. The Perl jobs then add their own UTC-vs-local confusion
+#   on top (LOAN-2811). Effective run times are not what any comment in
+#   this file says they are.
+
+MAILTO=""
+# ^ was loan-batch@meridiantrust.example until 2019. Emptied because the
+# nightly job started mailing 400 lines of Perl warnings every night
+# after the host rebuild. The warnings were not investigated; the mail
+# was turned off. run_nightly.sh also swallows stderr, so this is belt
+# and braces on top of a hole.
+
+SHELL=/bin/bash
+PATH=/opt/mtf/bin:/usr/local/bin:/usr/bin:/bin
+HOME=/home/loanapp
+
+# --- nightly batch ---------------------------------------------------
+# 02:10 Central. (Host is UTC now, so this is 20:10 the previous day
+# Central, i.e. during business hours on the West Coast.)
+10 2 * * * /opt/mtf/loanapp/cron/run_nightly.sh
+
+# DUPLICATE. Added 2019-11 by someone who believed the 02:10 run "wasn't
+# firing" during the week the lockfile was stale. It was firing. This
+# second entry was never removed, so the whole nightly batch runs twice,
+# five minutes apart. The second run finds the lockfile from the first
+# and exits -- UNLESS the first run finished quickly, in which case both
+# run, and funding_extract.pl runs twice on the same day. See LOAN-2388.
+15 2 * * * /opt/mtf/loanapp/cron/run_nightly.sh
+
+# --- healthcheck -----------------------------------------------------
+# every 10 minutes, "during business hours Eastern"
+*/10 8-18 * * 1-5 /opt/mtf/loanapp/cron/healthcheck.sh
+
+# --- log rotation ----------------------------------------------------
+# Commented out 2016-04 "temporarily" while we worked out why it was
+# deleting the current day's log. run_nightly.sh calls rotate_logs.sh
+# directly instead, which is why rotation happens at 02:10 and not 04:00.
+#0 4 * * * /opt/mtf/loanapp/cron/rotate_logs.sh
+
+# --- stale purge -----------------------------------------------------
+# Commented out 2020-05-14, the day of LOAN-1440. The script itself was
+# also disabled internally, and run_nightly.sh calls it anyway. Three
+# layers of "off" on the same job; only one of them is doing anything.
+#30 3 * * 0 /opt/mtf/loanapp/batch/stale_app_purge.pl --commit
+
+# --- bureau cache warm -----------------------------------------------
+# This path does not exist. batch/bureau_refresh.pl was on dkirkendall's
+# laptop and was never committed before he left in 2018. cron has been
+# logging "No such file or directory" for it every morning since.
+45 5 * * * /opt/mtf/loanapp/batch/bureau_refresh.pl --warm
+
+# --- month end -------------------------------------------------------
+# 23:30 UTC on the last-ish day. Runs on the 28th because a 2015 attempt
+# at "last day of month" logic was abandoned. February is correct by
+# accident; every other month it is early.
+30 23 28 * * /opt/mtf/loanapp/cron/run_nightly.sh --month-end
+
+# run_nightly.sh does not accept --month-end. It ignores it silently.
