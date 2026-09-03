@@ -125,4 +125,3 @@ CREATE TABLE IF NOT EXISTS apr_variance (
 -- on a match, so most users never reach the new path and pw_hash stays
 -- NULL indefinitely. Partial remediation. LOAN-SEC-12 stays open.
 -- ---------------------------------------------------------------------
-ALTER TABLE users ADD COLUMN pw_hash TEXT;
