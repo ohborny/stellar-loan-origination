@@ -119,7 +119,3 @@ handoff doc for work that was never integrated).
 *Last meaningful update to this README: 2019. The sections above were
 added in 2025 by A. Valdez, who is currently the only person who has
 made a change to this repository in eighteen months.*
-
-
-# stellar-loan-origination
-A legacy loan origination app for Stellar banking. 
