@@ -1,0 +1,58 @@
+# CODEOWNERS for LoanApp
+#
+# Ownership assignments based on the "who to ask about what" table in
+# docs/ONBOARDING.md. Most original owners have left the company (see the
+# addendum by avaldez, 2025-02-11). Current ownership falls to @ohborny
+# (A. Valdez / Elise Oborny), the only remaining engineer.
+#
+# Original area owners (for historical context, not for review routing):
+#   public/        — rwhitfield (HSG, original build), soyelaran (security)
+#   includes/      — dkirkendall (support modules), jchen (db.php)
+#   lib/           — Bluewater Consulting (2024 modernization, never wired up)
+#   partner/       — tnguyen (dealer network integration, 2023)
+#   batch/         — jchen (Perl batch layer)
+#   cron/          — dkirkendall (shell wrappers)
+#   conf/          — mpatel (rates.xml), dkirkendall (loanapp.ini)
+#   sql/           — various (migrations applied by hand)
+#   docs/          — soyelaran (onboarding), mpatel (architecture)
+#   tools/         — dkirkendall (incident scripts)
+#   tests/         — avaldez (2024-2025)
+
+# Default owner for the entire repository
+*                           @ohborny
+
+# Pricing and APR logic — the highest-risk area (see docs/KNOWN_ISSUES.md #1).
+# Five divergent APR implementations live across these paths. Any change
+# here affects customer-facing numbers and requires extra scrutiny.
+/public/apply.php            @ohborny
+/public/admin.php            @ohborny
+/lib/Pricing/                @ohborny
+/batch/nightly_reconcile.pl  @ohborny
+/tools/reprice_loan.php      @ohborny
+/conf/rates.xml              @ohborny
+
+# Feature flags — flipping flags can change every APR in the system.
+# See the warning in conf/feature_flags.php about the precedence order.
+/conf/feature_flags.php      @ohborny
+
+# Database schema and migrations — migration 003 is missing, so a fresh
+# database from sql/ is NOT identical to production.
+/sql/                        @ohborny
+/public/db_config.php        @ohborny
+
+# Partner integration — externally reachable through the DMZ reverse proxy.
+# Security findings LOAN-SEC-07, LOAN-SEC-19 are open in this area.
+/partner/                    @ohborny
+
+# Batch and cron — funding extract marks loans FUNDED before writing the
+# output file. Do not run against a database anyone cares about.
+/batch/                      @ohborny
+/cron/                       @ohborny
+
+# Tests — unit and integration tests
+/tests/                      @ohborny
+
+# Documentation
+/docs/                       @ohborny
+/AGENTS.md                   @ohborny
+/README.md                   @ohborny
