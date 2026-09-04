@@ -11,13 +11,37 @@ We should write tests.
 | `test_strings.php` | `lib/Support/strings.php` | 13 |
 | `test_money.php` | `lib/Support/money.php` | 16 |
 
-That's it. Two files, string and money helpers, no coverage of anything
-that decides or prices a loan.
+That's it for unit tests. Two files, string and money helpers, no coverage
+of anything that decides or prices a loan.
 
 ```bash
 php tests/test_strings.php
 php tests/test_money.php
 ```
+
+## Integration tests
+
+`tests/integration/` contains tests that exercise multiple components
+working together against real fixtures (the schema, the rate table, the
+partner XML mapper).
+
+| File | Covers | Assertions |
+|---|---|---|
+| `integration/test_db_integration.php` | Schema (sql/) + DB layer (includes/db.php) | 30 |
+| `integration/test_pricing_integration.php` | RateEngine + XmlRateTableLoader + conf/rates.xml | 40 |
+| `integration/test_partner_xml_integration.php` | partner_normalize_field_names + map_partner_v1 | 42 |
+
+```bash
+php tests/integration/test_db_integration.php
+php tests/integration/test_pricing_integration.php
+php tests/integration/test_partner_xml_integration.php
+```
+
+The DB integration test backs up and restores `data/loans.db` so the demo
+database is not affected. The pricing test uses a `FrozenClock` for
+deterministic results. The partner test documents a known bug in the
+field-name normalization chain (the Northgate `last4 -> ssn_last4` rename
+mangles already-normalized `ssn_last4` elements from other dealer formats).
 
 There is no runner, no `composer.json` install, no PHPUnit. Each file
 carries its own four-line `assert_eq()` and exits non-zero on failure.
